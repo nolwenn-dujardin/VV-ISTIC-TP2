@@ -4,6 +4,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.visitor.VoidVisitorWithDefaults;
 
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,48 +19,43 @@ public class NoGetterPrinter extends VoidVisitorWithDefaults<Void> {
 
     public void visitTypeDeclaration(TypeDeclaration<?> declaration, Void arg) {
         if(!declaration.isPublic()) return;
-        System.out.println(declaration.getFullyQualifiedName().orElse("[Anonymous]"));
 
-        System.out.println("modifiers : " + declaration.getModifiers());
-        //System.out.println("fields : " + declaration.getFields());
+        List<String> noGetterFields = new ArrayList<>();
 
-        List<String> classPrivateField = new ArrayList<>();
+        //System.out.println(declaration.getFullyQualifiedName().orElse("[Anonymous]"));
 
-        //TODO
-        declaration.getFields().forEach(fieldDeclaration -> {
-            if(!fieldDeclaration.isPublic()) {
-                System.out.println(fieldDeclaration.getVariables());
+        for(FieldDeclaration field : declaration.getFields()){
+            if(field.isPrivate()){
+                //Si le champ est privé, vérifier présence d'un getter public
+                String nameOfField = field.getVariable(0).getNameAsString();
 
-                classPrivateField.add(fieldDeclaration.getVariables().toString());
+                String nof = nameOfField.substring(0,1).toUpperCase()
+                        + nameOfField.substring(1);
+
+                //Si un getter existe, il est du format getNameOfField ou isNameOfField si c'est un booléen
+                String getterName1 = "get" + nof;
+                String getterName2 = "is" + nof;
+
+                boolean getterExist = declaration.getMethodsByName(getterName1).stream().anyMatch(
+                        method -> method.isPublic())
+                        || declaration.getMethodsByName(getterName2).stream().anyMatch(
+                        method -> method.isPublic()) ;
+
+                if(!getterExist){
+                    noGetterFields.add(nameOfField);
+                }
             }
-        });
-
-        System.out.println("Fields : "+classPrivateField);
-
-        for(MethodDeclaration method : declaration.getMethods()) {
-            method.accept(this, arg);
         }
-        // Printing nested types in the top level
-        for(BodyDeclaration<?> member : declaration.getMembers()) {
-            if (member instanceof TypeDeclaration)
-                member.accept(this, arg);
-        }
+
+        System.out.println(
+                "Classe : " + declaration.getNameAsString() + "\n"
+                + "Package : " + declaration.findCompilationUnit().flatMap(CompilationUnit::getPackageDeclaration).get().getNameAsString() + "\n"
+                + "No getter field : " + noGetterFields.toString() + "\n"
+        );
     }
 
     @Override
     public void visit(ClassOrInterfaceDeclaration declaration, Void arg) {
         visitTypeDeclaration(declaration, arg);
     }
-
-    @Override
-    public void visit(EnumDeclaration declaration, Void arg) {
-        visitTypeDeclaration(declaration, arg);
-    }
-
-    @Override
-    public void visit(MethodDeclaration declaration, Void arg) {
-        if(!declaration.isPublic()) return;
-        System.out.println("  " + declaration.getDeclarationAsString(true, true));
-    }
-
 }
