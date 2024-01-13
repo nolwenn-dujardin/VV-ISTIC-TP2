@@ -1,6 +1,6 @@
 package test.clazz;
 
-public class Person {
+class Person {
     private int age;
     private String name;
 

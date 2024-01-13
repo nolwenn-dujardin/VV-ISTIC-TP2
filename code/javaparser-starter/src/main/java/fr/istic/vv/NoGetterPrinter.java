@@ -18,11 +18,7 @@ public class NoGetterPrinter extends VoidVisitorWithDefaults<Void> {
     }
 
     public void visitTypeDeclaration(TypeDeclaration<?> declaration, Void arg) {
-        if(!declaration.isPublic()) return;
-
         List<String> noGetterFields = new ArrayList<>();
-
-        //System.out.println(declaration.getFullyQualifiedName().orElse("[Anonymous]"));
 
         for(FieldDeclaration field : declaration.getFields()){
             if(field.isPrivate()){
@@ -48,7 +44,7 @@ public class NoGetterPrinter extends VoidVisitorWithDefaults<Void> {
         }
 
         System.out.println(
-                "Classe : " + declaration.getNameAsString() + "\n"
+                "Class : " + declaration.getNameAsString() + "\n"
                 + "Package : " + declaration.findCompilationUnit().flatMap(CompilationUnit::getPackageDeclaration).get().getNameAsString() + "\n"
                 + "No getter field : " + noGetterFields.toString() + "\n"
         );
